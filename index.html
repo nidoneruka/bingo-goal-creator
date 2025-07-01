@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>目標ビンゴ作成ツール</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f9fafb;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 16px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .title-input {
+            padding: 8px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 500;
+            min-width: 250px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn-save {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-save:disabled {
+            background: #6b7280;
+            cursor: not-allowed;
+        }
+
+        .btn-generate {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-generate:hover {
+            background: #2563eb;
+        }
+
+        .main-content {
+            max-width: 1200px;
+            margin: 24px auto;
+            padding: 0 24px;
+        }
+
+        .bingo-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 32px;
+        }
+
+        .bingo-title {
+            text-align: center;
+            font-size: 28px;
+            font-weight: bold;
+            color: #3b82f6;
+            margin-bottom: 24px;
+        }
+
+        .bingo-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            aspect-ratio: 1;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .bingo-cell {
+            position: relative;
+            border: 2px solid #1e40af;
+            border-radius: 8px;
+            padding: 8px;
+            background: #eff6ff;
+            transition: all 0.2s;
+        }
+
+        .bingo-cell.completed {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .bingo-cell:hover {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .cell-textarea {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: transparent;
+            resize: none;
+            font-size: 10px;
+            line-height: 1.2;
+            color: inherit;
+            outline: none;
+        }
+
+        .cell-textarea::placeholder {
+            color: #9ca3af;
+        }
+
+        .completed .cell-textarea::placeholder {
+            color: #e5e7eb;
+        }
+
+        .complete-btn {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #9ca3af;
+            border-radius: 50%;
+            background: transparent;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .complete-btn:hover {
+            border-color: #374151;
+            color: #374151;
+        }
+
+        .completed .complete-btn {
+            background: white;
+            border-color: white;
+            color: #374151;
+        }
+
+        .instructions {
+            text-align: center;
+            margin-top: 24px;
+            color: #6b7280;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            z-index: 1000;
+            padding: 16px;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            max-width: 1000px;
+            max-height: 90vh;
+            margin: auto;
+            overflow: auto;
+            position: relative;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .modal-header {
+            padding: 16px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-body {
+            padding: 16px;
+            text-align: center;
+        }
+
+        .modal-image {
+            max-width: 100%;
+            height: auto;
+            max-height: 70vh;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #6b7280;
+        }
+
+        .close-btn:hover {
+            color: #374151;
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .title-input {
+                min-width: auto;
+            }
+
+            .button-group {
+                justify-content: center;
+            }
+
+            .bingo-container {
+                padding: 16px;
+            }
+
+            .cell-textarea {
+                font-size: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- ヘッダー -->
+    <div class="header">
+        <div class="header-content">
+            <input type="text" id="bingoTitle" class="title-input" value="私の目標ビンゴ" placeholder="ビンゴのタイトル">
+            <div class="button-group">
+                <button id="saveBtn" class="btn btn-save">
+                    💾 保存完了
+                </button>
+                <button id="generateBtn" class="btn btn-generate">
+                    📸 画像を生成
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- メインコンテンツ -->
+    <div class="main-content">
+        <div class="bingo-container">
+            <h2 id="displayTitle" class="bingo-title">私の目標ビンゴ</h2>
+            
+            <div id="bingoGrid" class="bingo-grid">
+                <!-- JavaScriptで生成 -->
+            </div>
+
+            <div class="instructions">
+                <p>各セルに目標を入力し、達成したら右上の○ボタンをクリックして完了マークを付けましょう。</p>
+                <p>「画像を生成」ボタンで高解像度画像を表示し、右クリックで保存できます。</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 画像プレビューモーダル -->
+    <div id="imageModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>目標ビンゴ画像</h3>
+                <button id="closeModal" class="close-btn">×</button>
+            </div>
+            <div class="modal-body">
+                <canvas id="bingoCanvas" style="display: none;"></canvas>
+                <img id="generatedImage" class="modal-image" alt="目標ビンゴ">
+                <div style="margin-top: 16px; color: #6b7280; font-size: 14px;">
+                    <p>💻 PC：右クリックして「名前を付けて画像を保存」を選択</p>
+                    <p style="font-size: 12px; margin-top: 8px;">高画質版：2480x3508px (A4印刷対応・300DPI)</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class BingoGoalCreator {
+            constructor() {
+                this.goals = Array(25).fill('');
+                this.completedCells = new Set();
+                this.title = '私の目標ビンゴ';
+                this.saveStatus = 'saved';
+                this.STORAGE_KEY = 'bingo-goal-data';
+                
+                this.initializeElements();
+                this.loadData();
+                this.createBingoGrid();
+                this.bindEvents();
+            }
+
+            initializeElements() {
+                this.titleInput = document.getElementById('bingoTitle');
+                this.displayTitle = document.getElementById('displayTitle');
+                this.saveBtn = document.getElementById('saveBtn');
+                this.generateBtn = document.getElementById('generateBtn');
+                this.bingoGrid = document.getElementById('bingoGrid');
+                this.imageModal = document.getElementById('imageModal');
+                this.canvas = document.getElementById('bingoCanvas');
+                this.generatedImage = document.getElementById('generatedImage');
+                this.closeModal = document.getElementById('closeModal');
+            }
+
+            loadData() {
+                const savedData = localStorage.getItem(this.STORAGE_KEY);
+                if (savedData) {
+                    try {
+                        const parsed = JSON.parse(savedData);
+                        this.goals = parsed.goals || Array(25).fill('');
+                        this.title = parsed.title || '私の目標ビンゴ';
+                        this.completedCells = new Set(parsed.completedCells || []);
+                        
+                        this.titleInput.value = this.title;
+                        this.displayTitle.textContent = this.title;
+                    } catch (error) {
+                        console.error('保存データの読み込みに失敗:', error);
+                    }
+                }
+            }
+
+            saveData() {
+                const dataToSave = {
+                    goals: this.goals,
+                    title: this.title,
+                    completedCells: Array.from(this.completedCells),
+                    lastSaved: new Date().toISOString()
+                };
+                localStorage.setItem(this.STORAGE_KEY, JSON.stringify(dataToSave));
+            }
+
+            createBingoGrid() {
+                this.bingoGrid.innerHTML = '';
+                
+                for (let i = 0; i < 25; i++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'bingo-cell';
+                    if (this.completedCells.has(i)) {
+                        cell.classList.add('completed');
+                    }
+
+                    const textarea = document.createElement('textarea');
+                    textarea.className = 'cell-textarea';
+                    textarea.value = this.goals[i];
+                    textarea.placeholder = `目標${i + 1}`;
+                    textarea.addEventListener('input', (e) => {
+                        this.goals[i] = e.target.value;
+                        this.autoSave();
+                    });
+
+                    const completeBtn = document.createElement('button');
+                    completeBtn.className = 'complete-btn';
+                    completeBtn.textContent = this.completedCells.has(i) ? '✓' : '○';
+                    completeBtn.title = this.completedCells.has(i) ? '完了を取り消す' : '完了にする';
+                    completeBtn.addEventListener('click', () => {
+                        this.toggleComplete(i);
+                    });
+
+                    cell.appendChild(textarea);
+                    cell.appendChild(completeBtn);
+                    this.bingoGrid.appendChild(cell);
+                }
+            }
+
+            toggleComplete(index) {
+                if (this.completedCells.has(index)) {
+                    this.completedCells.delete(index);
+                } else {
+                    this.completedCells.add(index);
+                }
+                this.createBingoGrid();
+                this.autoSave();
+            }
+
+            autoSave() {
+                this.setSaveStatus('saving');
+                setTimeout(() => {
+                    this.saveData();
+                    this.setSaveStatus('saved');
+                }, 500);
+            }
+
+            setSaveStatus(status) {
+                this.saveStatus = status;
+                this.saveBtn.textContent = status === 'saving' ? '🔄 自動保存中' : '💾 保存完了';
+                this.saveBtn.disabled = true;
+            }
+
+            generateImage() {
+                const canvas = this.canvas;
+                const ctx = canvas.getContext('2d');
+                
+                // A4サイズ対応の高解像度設定 (300 DPI)
+                const width = 2480;
+                const height = 3508;
+                canvas.width = width;
+                canvas.height = height;
+
+                // 背景色
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, width, height);
+
+                // マージン設定
+                const margin = 200;
+                const contentWidth = width - margin * 2;
+                const contentHeight = height - margin * 2;
+
+                // タイトル描画
+                ctx.fillStyle = '#3b82f6';
+                ctx.font = 'bold 120px Arial, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(this.title, width / 2, margin + 150);
+
+                // ビンゴグリッドの設定
+                const gridStartY = margin + 300;
+                const gridHeight = contentHeight - 300;
+                const cellSize = Math.min(contentWidth / 5, gridHeight / 5);
+                const gridWidth = cellSize * 5;
+                const gridStartX = (width - gridWidth) / 2;
+
+                // グリッド描画
+                for (let row = 0; row < 5; row++) {
+                    for (let col = 0; col < 5; col++) {
+                        const index = row * 5 + col;
+                        const x = gridStartX + col * cellSize;
+                        const y = gridStartY + row * cellSize;
+
+                        // セルの背景
+                        if (this.completedCells.has(index)) {
+                            ctx.fillStyle = '#3b82f6';
+                        } else {
+                            ctx.fillStyle = '#eff6ff';
+                        }
+                        ctx.fillRect(x, y, cellSize, cellSize);
+
+                        // セルの枠線
+                        ctx.strokeStyle = '#1e40af';
+                        ctx.lineWidth = 4;
+                        ctx.strokeRect(x, y, cellSize, cellSize);
+
+                        // テキスト描画
+                        const text = this.goals[index] || '';
+                        if (text) {
+                            ctx.fillStyle = this.completedCells.has(index) ? '#ffffff' : '#1f2937';
+                            ctx.font = 'bold 48px Arial, sans-serif';
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            
+                            // 長いテキストの場合は改行
+                            const maxWidth = cellSize - 80;
+                            const lines = this.wrapText(ctx, text, maxWidth);
+                            const lineHeight = 55;
+                            const totalHeight = lines.length * lineHeight;
+                            const startY = y + cellSize / 2 - totalHeight / 2 + lineHeight / 2;
+                            
+                            lines.forEach((line, i) => {
+                                ctx.fillText(line, x + cellSize / 2, startY + i * lineHeight);
+                            });
+                        }
+
+                        // 完了マーク（右上に小さく）
+                        if (this.completedCells.has(index)) {
+                            const checkMarkSize = cellSize * 0.08;
+                            const checkX = x + cellSize - checkMarkSize - 20;
+                            const checkY = y + 20;
+                            
+                            // 小さい円形背景
+                            ctx.fillStyle = '#ffffff';
+                            ctx.beginPath();
+                            ctx.arc(checkX + checkMarkSize/2, checkY + checkMarkSize/2, checkMarkSize/2 + 5, 0, 2 * Math.PI);
+                            ctx.fill();
+                            
+                            // チェックマーク
+                            ctx.strokeStyle = '#3b82f6';
+                            ctx.lineWidth = 6;
+                            ctx.lineCap = 'round';
+                            ctx.lineJoin = 'round';
+                            ctx.beginPath();
+                            
+                            const checkCenterX = checkX + checkMarkSize/2;
+                            const checkCenterY = checkY + checkMarkSize/2;
+                            const checkSize = checkMarkSize * 0.4;
+                            
+                            ctx.moveTo(checkCenterX - checkSize/2, checkCenterY);
+                            ctx.lineTo(checkCenterX - checkSize/6, checkCenterY + checkSize/2);
+                            ctx.lineTo(checkCenterX + checkSize/2, checkCenterY - checkSize/2);
+                            ctx.stroke();
+                        }
+                    }
+                }
+
+                // 画像を表示
+                const dataURL = canvas.toDataURL('image/png', 1.0);
+                this.generatedImage.src = dataURL;
+                this.imageModal.style.display = 'block';
+            }
+
+            wrapText(ctx, text, maxWidth) {
+                const words = text.split('');
+                const lines = [];
+                let currentLine = '';
+
+                for (let word of words) {
+                    const testLine = currentLine + word;
+                    const metrics = ctx.measureText(testLine);
+                    if (metrics.width > maxWidth && currentLine !== '') {
+                        lines.push(currentLine);
+                        currentLine = word;
+                    } else {
+                        currentLine = testLine;
+                    }
+                }
+                if (currentLine) {
+                    lines.push(currentLine);
+                }
+                return lines;
+            }
+
+            bindEvents() {
+                this.titleInput.addEventListener('input', (e) => {
+                    this.title = e.target.value;
+                    this.displayTitle.textContent = this.title;
+                    this.autoSave();
+                });
+
+                this.saveBtn.addEventListener('click', () => {
+                    this.setSaveStatus('saving');
+                    this.saveData();
+                    setTimeout(() => {
+                        this.setSaveStatus('saved');
+                    }, 300);
+                });
+
+                this.generateBtn.addEventListener('click', () => {
+                    this.generateImage();
+                });
+
+                this.closeModal.addEventListener('click', () => {
+                    this.imageModal.style.display = 'none';
+                });
+
+                this.imageModal.addEventListener('click', (e) => {
+                    if (e.target === this.imageModal) {
+                        this.imageModal.style.display = 'none';
+                    }
+                });
+            }
+        }
+
+        // アプリケーション開始
+        document.addEventListener('DOMContentLoaded', () => {
+            new BingoGoalCreator();
+        });
+    </script>
+</body>
+</html>
